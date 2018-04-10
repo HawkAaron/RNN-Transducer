@@ -4,3 +4,5 @@ exp
 fbank
 lang
 seq2seq
+scripts
+upload.sh
