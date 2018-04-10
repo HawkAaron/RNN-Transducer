@@ -137,11 +137,11 @@ class TokenAcc():
     def update(self, pred, label):
         '''
         TODO for batch, need xlen
-        label is one dimensinal
         '''
-        pred = pred.reshape(-1, pred.shape[-1])
-        e = self._distance(pred, label)
-        c = label.shape[0]
+        e = c = 0
+        for p, l in zip(pred, label):
+            e += self._distance(p, l)
+            c += l.shape[0]
         self.tmp_err += e; self.err += e
         self.tmp_cnt += c; self.cnt += c
         return 100 * e / c

@@ -14,13 +14,12 @@ from utils import Accuracy, TokenAcc, convert
 from utils import mean, var, dset
 from joint_model import Transducer
 
-
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')
 parser.add_argument('--lr', type=float, default=1e-3,
                     help='initial learning rate')
 parser.add_argument('--clip', type=float, default=0.2,
                     help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=200,
+parser.add_argument('--epochs', type=int, default=100,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=1, metavar='N',
                     help='batch size')
@@ -28,7 +27,7 @@ parser.add_argument('--dropout', type=float, default=0.5,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--log-interval', type=int, default=50, metavar='N',
                     help='report interval')
-parser.add_argument('--out', type=str, default='exp/rnnt_init',
+parser.add_argument('--out', type=str, default='exp/rnnt_lr1e-3',
                     help='path to save the final model')
 parser.add_argument('--init', type=str, default='',
                     help='Initial am & pm parameters')

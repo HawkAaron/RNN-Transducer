@@ -19,12 +19,13 @@ class RNNModel(gluon.Block):
 
 class Transducer(gluon.Block):
     ''' When joint training, remove RNNModel decoder layer '''
-    def __init__(self, vocab_size=49, num_hidden=128, dropout=.5, blank=0):
+    def __init__(self, vocab_size=49, num_hidden=128, dropout=.5, blank=0, ret=False):
         super(Transducer, self).__init__()
         self.num_hidden = num_hidden
         self.vocab_size = vocab_size
         self.loss = RNNTLoss(blank)
         self.blank = blank
+        self.ret = ret
         with self.name_scope():
             # acoustic model
             self.encoder = RNNModel(vocab_size, num_hidden, 2, dropout)
@@ -39,10 +40,12 @@ class Transducer(gluon.Block):
         ymat = mx.nd.concat(mx.nd.zeros((ymat.shape[0], 1, ymat.shape[2]), ctx=ymat.context), ymat, dim=1) # concat zero vector
         g = self.decoder(ymat)
         # rnnt loss
-        f = mx.nd.expand_dims(f, axis=2)
-        g = mx.nd.expand_dims(g, axis=1)
-        logp = mx.nd.log_softmax(f + g, axis=3)
+        f1 = mx.nd.expand_dims(f, axis=2)
+        g1 = mx.nd.expand_dims(g, axis=1)
+        logp = mx.nd.log_softmax(f1 + g1, axis=3)
         loss = self.loss(logp, ys, xlen, ylen)
+        if self.ret:
+            return f, g, loss
         return loss
     
     def greedy_decode(self, xs):
@@ -68,7 +71,7 @@ class Transducer(gluon.Block):
                 y = self.decoder.decoder(y)
         return y_seq
 
-    def beam_search(self, xs, W=10, prefix=False):
+    def beam_search(self, xs, W=10, prefix=True):
         '''
         `xs`: acoustic model outputs
         NOTE only support one sequence (batch size = 1)

@@ -3,8 +3,8 @@
 * joint_model.py: rnnt model, which contains acoustic / phoneme model
 * rnnt_np.py: rnnt loss function implementation on mxnet, support for both symbol and gluon
 * utils.py: data process
-* train_init.py: rnnt training script, can be initialized from CTC and PM model
-* train_rnnt.py: rnnt training script with AM and PM PER log
+* train.py: rnnt training script, can be initialized from CTC and PM model
+* train_log.py: rnnt training script with AM and PM PER log
 
 # Directory description
 * data-fbank: training data set 
@@ -19,7 +19,7 @@
 # Run
 * run local:
 ```bash
-python train_init.py --init <path to initial rnnt model> --initam <path to initial CTC model> --initpm <path to initital PM model> \
+python train.py --init <path to initial rnnt model> --initam <path to initial CTC model> --initpm <path to initital PM model> \
 --lr 1e-3 --out exp/rnnt_lr1e-3 --schedule
 ```
 * run on slurm:
@@ -41,7 +41,7 @@ python eval.py <path to best model parameters> --beam <beam size>
 # Note
 * Current implementation support batch training, but for TIMIT, only do online training.
 * The implementation of Transduction loss is really slow, about 5 times running time of CTC.
-* If you train RNNT use `train_rnnt.py`, the PER (calculated seperately in CTC training way.) doesn't change, it has nothing to do with RNNT joint PER
+* If you train RNNT use `train_log.py`, the PER (calculated seperately in CTC training way.) doesn't change, it has nothing to do with RNNT joint PER
 
 # TODO
 * RNNT loss accelaration using CPP
