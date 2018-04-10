@@ -96,7 +96,7 @@ class RNNTransducer(mx.operator.CustomOp):
 
     To make it usable for real-world cases, this class has two policies below.
     1. This class computes forward and backward variables in the log domain.
-    2. This class applies the softmax function to inputs. 
+    2. This class do not apply the softmax function to inputs, since the gradient calculation will be easily overflow. 
 
     NOTE that mxnet ndarray is computed on backend engine, we can use gpu and cpu parallel.
     """
