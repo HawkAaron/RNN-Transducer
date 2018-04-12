@@ -58,10 +58,7 @@ def compute_gradient(log_probs, alphas, betas, labels, blank):
     for u, l in enumerate(labels):
         grads[:, u, l] = alphas[:, u] + betas[:, u+1]
 
-    grads = grads + log_probs - log_like
-    grads = np.exp(grads)
-
-    grads = -grads
+    grads = -np.exp(grads - log_like)
     return grads
 
 def transduce(log_probs, labels, blank=0):
@@ -110,7 +107,8 @@ class RNNTransducer(mx.operator.CustomOp):
         `flen`: acoustic model outputs sequence true length <= T
         `glen`: label sequence length <= U
         '''
-        logp, y, flen, glen = in_data
+        ytu, y, flen, glen = in_data
+        logp = ytu.log()
 
         loss, grad = transduce_batch(logp.asnumpy(), y.asnumpy().astype(np.int32), flen.asnumpy(), glen.asnumpy(), self.blank)
         self.saved_tensors = mx.nd.array(grad, ctx=logp.context),
@@ -129,7 +127,7 @@ class RNNTransducerProp(mx.operator.CustomOpProp):
         self.blank = int(blank)
 
     def list_arguments(self):
-        return ['logytu', 'label', 'flen', 'glen']
+        return ['ytu', 'label', 'flen', 'glen']
 
     def list_outputs(self):
         return ['output']
@@ -146,24 +144,23 @@ class RNNTLoss(mx.gluon.loss.Loss):
         self.blank = blank
         super(RNNTLoss, self).__init__(weight, batch_axis, **kwargs)
     
-    def hybrid_forward(self, F, logytu, label, flen, glen):
-        # TODO add symbol support
-        loss = F.Custom(logytu, label, flen, glen, blank=self.blank, op_type='Transducer')
+    def hybrid_forward(self, F, ytu, label, flen, glen):
+        loss = F.Custom(ytu, label, flen, glen, blank=self.blank, op_type='Transducer')
         return loss
 
 if __name__ == '__main__':
     T = 400; U = 300; B = 1; V = 50
     ctx = mx.cpu()
     def joint_test():
-        logp = mx.nd.log_softmax(mx.nd.random_uniform(-10, 10, shape=(B, T, U+1, V), ctx=ctx, dtype=np.float32), axis=3)
+        ytu = mx.nd.softmax(mx.nd.random_uniform(-10, 10, shape=(B, T, U+1, V), ctx=ctx, dtype=np.float32), axis=3)
         y = mx.nd.random_uniform(1, V, shape=(B, U), ctx=ctx).astype('i')
         flen = mx.nd.full(B, T, ctx=ctx, dtype='i')
         glen = mx.nd.full(B, U, ctx=ctx, dtype='i')
-        logp.attach_grad()
+        ytu.attach_grad()
         with mx.autograd.record():
-            loss = mx.nd.Custom(logp, y, flen, glen, op_type='Transducer')
+            loss = mx.nd.Custom(ytu, y, flen, glen, op_type='Transducer')
         loss.backward()
-        print(logp.grad)
+        print(ytu.grad)
         print(loss)
     def seperate_test():
         f = mx.nd.random_uniform(-10, 10, shape=(B, T, V), ctx=ctx, dtype=np.float32)
@@ -176,23 +173,23 @@ if __name__ == '__main__':
         with mx.autograd.record():
             f1 = mx.nd.expand_dims(f, axis=2)
             g1 = mx.nd.expand_dims(g, axis=1)
-            logp = mx.nd.log_softmax(f1 + g1, axis=3)
-            loss = mx.nd.Custom(logp, y, flen, glen, op_type='Transducer', blank=0)
+            ytu = mx.nd.softmax(f1 + g1, axis=3)
+            loss = mx.nd.Custom(ytu, y, flen, glen, op_type='Transducer', blank=0)
         loss.backward()
         print(f.grad)
         print(g.grad)
         print(loss)
     def loss_test():
-        logp = mx.nd.log_softmax(mx.nd.random_uniform(-10, 10, shape=(B, T, U+1, V), ctx=ctx, dtype=np.float32), axis=3)
+        ytu = mx.nd.softmax(mx.nd.random_uniform(-10, 10, shape=(B, T, U+1, V), ctx=ctx, dtype=np.float32), axis=3)
         y = mx.nd.random_uniform(1, V, shape=(B, U), ctx=ctx).astype('i')
         flen = mx.nd.full(B, T, ctx=ctx, dtype='i')
         glen = mx.nd.full(B, U, ctx=ctx, dtype='i')
-        logp.attach_grad()
+        ytu.attach_grad()
         criterion = RNNTLoss()
         with mx.autograd.record():
-            loss = criterion(logp, y, flen, glen)
+            loss = criterion(ytu, y, flen, glen)
         loss.backward()
-        print(logp.grad)
+        print(ytu.grad)
         print(loss)
     # seperate_test()
     loss_test()

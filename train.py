@@ -10,16 +10,13 @@ import mxnet as mx
 import numpy as np
 from mxnet import autograd, gluon
 from mxnet.gluon import contrib
-from utils import Accuracy, TokenAcc, convert
-from utils import mean, var, dset
+from DataLoader import SequentialLoader, TokenAcc
 from joint_model import Transducer
 
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')
 parser.add_argument('--lr', type=float, default=1e-3,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=0.2,
-                    help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=100,
+parser.add_argument('--epochs', type=int, default=200,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=1, metavar='N',
                     help='batch size')
@@ -35,6 +32,7 @@ parser.add_argument('--initam', type=str, default='',
                     help='Initial am parameters')
 parser.add_argument('--initpm', type=str, default='',
                     help='Initial pm parameters')
+parser.add_argument('--gradclip', type=float, default=0)
 parser.add_argument('--schedule', default=False, action='store_true')
 args = parser.parse_args()
 
@@ -43,11 +41,8 @@ logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%m-%d %H:%M:%S",
 
 context = mx.gpu(0)
 # Dataset
-dset = dset()
-train_feat = dset['train']['feat']
-train_label = dset['train']['label']
-cv_feat = dset['cv']['feat']
-cv_label = dset['cv']['label']
+trainset = SequentialLoader('train', args.batch_size, context)
+devset = SequentialLoader('dev', args.batch_size, context)
 
 ###############################################################################
 # Build the model
@@ -78,11 +73,10 @@ trainer = gluon.Trainer(model.collect_params(), 'sgd',
 
 def evaluate(ctx=context):
     losses = []
-    for i, (k, v) in enumerate(kaldi_io.read_mat_ark(cv_feat)):
-        xs, ys, xlen, ylen = convert((v, cv_label[k]), ctx)
+    for xs, ys, xlen, ylen in devset:
         loss = model(xs, ys, xlen, ylen)
         losses.append(float(loss.sum().asscalar()))
-    return sum(losses) / len(losses) / args.batch_size
+    return sum(losses) / len(devset)
 
 def train():
     best_model = None
@@ -91,16 +85,16 @@ def train():
         losses = []
         totl0 = 0
         start_time = time.time()
-        for i, (k, v) in enumerate(kaldi_io.read_mat_ark(train_feat)):
-            xs, ys, xlen, ylen = convert((v, train_label[k]), context)
+        for i, (xs, ys, xlen, ylen) in enumerate(trainset):
             with autograd.record():
                 loss = model(xs, ys, xlen, ylen)
                 loss.backward()
 
             losses.append(float(loss.sum().asscalar()))
             # gradient clip
-            # grads = [p.grad(context) for p in model.collect_params().values()]
-            # gluon.utils.clip_global_norm(grads, 5)
+            if args.gradclip > 0:
+                grads = [p.grad(context) for p in model.collect_params().values()]
+                gluon.utils.clip_global_norm(grads, args.gradclip)
 
             trainer.step(args.batch_size, ignore_stale_grad=True)
             totl0 += losses[-1]
@@ -110,7 +104,7 @@ def train():
                 logging.info('[Epoch %d Batch %d] loss %.2f'%(epoch, i, l0))
                 totl0 = 0
 
-        losses = sum(losses) / len(losses) / args.batch_size
+        losses = sum(losses) / len(trainset)
         val_l = evaluate()
 
         logging.info('[Epoch %d] time cost %.2fs, train loss %.2f; cv loss %.2f; lr %.2e'%(
