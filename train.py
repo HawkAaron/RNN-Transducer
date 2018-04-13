@@ -11,7 +11,7 @@ import numpy as np
 from mxnet import autograd, gluon
 from mxnet.gluon import contrib
 from DataLoader import SequentialLoader, TokenAcc
-from model import Transducer
+from model2012 import Transducer
 
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')
 parser.add_argument('--lr', type=float, default=1e-3,

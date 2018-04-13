@@ -8,7 +8,7 @@ import editdistance
 import kaldi_io
 import mxnet as mx
 import numpy as np
-from model import Transducer, RNNModel
+from model2012 import Transducer, RNNModel
 from DataLoader import TokenAcc, rephone
 
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')

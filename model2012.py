@@ -35,11 +35,11 @@ class Transducer(gluon.Block):
     
     def forward(self, xs, ys, xlen, ylen):
         # forward acoustic model
-        f = self.encoder.rnn(xs)
+        f = self.encoder(xs)
         # forward prediction model
         ymat = mx.nd.one_hot(ys-1, self.vocab_size-1) # pm input size 
         ymat = mx.nd.concat(mx.nd.zeros((ymat.shape[0], 1, ymat.shape[2]), ctx=ymat.context), ymat, dim=1) # concat zero vector
-        g = self.decoder.rnn(ymat)
+        g = self.decoder(ymat)
         # rnnt loss
         f = mx.nd.expand_dims(f, axis=2) # BT1H
         g = mx.nd.expand_dims(g, axis=1) # B1UH
