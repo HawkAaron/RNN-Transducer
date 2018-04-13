@@ -2,7 +2,7 @@
 
 feature_transform_proto=/tmp/proto
 splice=0
-train_feats='ark:copy-feats scp:data/train/feats.scp ark:- | apply-cmvn --utt2spk=ark:data/train/utt2spk scp:data/train/cmvn.scp ark:- ark:- | add-deltas --delta-order=2 ark:- ark:- |'
+train_feats='ark:copy-feats scp:data/train/feats.scp ark:- | apply-cmvn --utt2spk=ark:data/train/utt2spk scp:data/train/cmvn.scp ark:- ark:- | add-deltas --delta-order=1 ark:- ark:- |'
 
 feat_dim=$(feat-to-dim "$train_feats" -)
 echo "<Splice> <InputDim> $feat_dim <OutputDim> $(((2*splice+1)*feat_dim)) <BuildVector> -$splice:$splice </BuildVector>" >$feature_transform_proto
