@@ -31,6 +31,7 @@ class SequentialLoader:
     def __init__(self, dtype, batch_size=1, ctx=mx.cpu(0)):
         self.ctx = ctx
         self.labels = {}
+        self.label_cnt = 0
         self.feats_rspecifier = 'ark:copy-feats scp:data/{}/feats.scp ark:- | apply-cmvn --utt2spk=ark:data/{}/utt2spk scp:data/{}/cmvn.scp ark:- ark:- |\
  add-deltas --delta-order=2 ark:- ark:- | nnet-forward data/final.feature_transform ark:- ark:- |'.format(dtype, dtype, dtype)
         self.batch_size = batch_size
@@ -39,6 +40,7 @@ class SequentialLoader:
             for line in f:
                 line = line.split()
                 self.labels[line[0]] = np.array([phone[i] for i in line[1:]])
+                self.label_cnt += len(self.labels[line[0]])
         # load feature
 
     def __len__(self):
