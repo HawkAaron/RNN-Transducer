@@ -11,7 +11,7 @@ import numpy as np
 from mxnet import autograd, gluon
 from mxnet.gluon import contrib
 from DataLoader import SequentialLoader, TokenAcc
-from joint_model import Transducer
+from model import Transducer
 
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')
 parser.add_argument('--lr', type=float, default=1e-3,
@@ -22,6 +22,8 @@ parser.add_argument('--batch_size', type=int, default=1, metavar='N',
                     help='batch size')
 parser.add_argument('--dropout', type=float, default=0.5,
                     help='dropout applied to layers (0 = no dropout)')
+parser.add_argument('--bi', default=False, action='store_true', 
+                    help='whether use bidirectional lstm')
 parser.add_argument('--log-interval', type=int, default=50, metavar='N',
                     help='report interval')
 parser.add_argument('--out', type=str, default='exp/rnnt_lr1e-3',
@@ -37,6 +39,8 @@ parser.add_argument('--schedule', default=False, action='store_true')
 args = parser.parse_args()
 
 os.makedirs(args.out, exist_ok=True)
+with open(os.path.join(args.out, 'args'), 'w') as f:
+    f.write(str(args))
 logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%m-%d %H:%M:%S", filename=os.path.join(args.out, 'train.log'), level=logging.INFO)
 
 context = mx.gpu(0)
@@ -48,7 +52,7 @@ devset = SequentialLoader('dev', args.batch_size, context)
 # Build the model
 ###############################################################################
 
-model = Transducer(dropout=args.dropout)
+model = Transducer(40, 128, 2, args.dropout, bidirectional=args.bi)
 # model.collect_params().initialize(mx.init.Xavier(), ctx=context)
 if args.init:
     model.collect_params().load(args.init, context)
@@ -76,7 +80,7 @@ def evaluate(ctx=context):
     for xs, ys, xlen, ylen in devset:
         loss = model(xs, ys, xlen, ylen)
         losses.append(float(loss.sum().asscalar()))
-    return sum(losses) / len(devset)
+    return sum(losses) / len(devset), sum(losses) / len(devset.label_cnt)
 
 def train():
     best_model = None
@@ -105,10 +109,10 @@ def train():
                 totl0 = 0
 
         losses = sum(losses) / len(trainset)
-        val_l = evaluate()
+        val_l, logl = evaluate()
 
-        logging.info('[Epoch %d] time cost %.2fs, train loss %.2f; cv loss %.2f; lr %.2e'%(
-            epoch, time.time()-start_time, losses, val_l, trainer.learning_rate))
+        logging.info('[Epoch %d] time cost %.2fs, train loss %.2f; cv loss %.2f, log_loss %.2f; lr %.2e'%(
+            epoch, time.time()-start_time, losses, val_l, logl, trainer.learning_rate))
 
         if val_l < prev_loss:
             prev_loss = val_l
