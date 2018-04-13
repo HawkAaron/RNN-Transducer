@@ -28,6 +28,7 @@ parser.add_argument('--log-interval', type=int, default=50, metavar='N',
                     help='report interval')
 parser.add_argument('--out', type=str, default='exp/rnnt_lr1e-3',
                     help='path to save the final model')
+parser.add_argument('--stdout', default=False, action='store_true')
 parser.add_argument('--init', type=str, default='',
                     help='Initial am & pm parameters')
 parser.add_argument('--initam', type=str, default='',
@@ -41,7 +42,8 @@ args = parser.parse_args()
 os.makedirs(args.out, exist_ok=True)
 with open(os.path.join(args.out, 'args'), 'w') as f:
     f.write(str(args))
-logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%m-%d %H:%M:%S", filename=os.path.join(args.out, 'train.log'), level=logging.INFO)
+if args.stdout: logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%m-%d %H:%M:%S", level=logging.INFO)
+else: logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%m-%d %H:%M:%S", filename=os.path.join(args.out, 'train.log'), level=logging.INFO)
 
 context = mx.gpu(0)
 # Dataset
