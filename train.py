@@ -68,7 +68,7 @@ elif args.initam or args.initpm:
     # print('initial model save to', args.out+'/init')
 else:
     model.initialize(mx.init.Uniform(0.1), ctx=context)
-    
+
 trainer = gluon.Trainer(model.collect_params(), 'sgd',
                         {'learning_rate': args.lr,
                          'momentum': 0.9})
@@ -82,7 +82,7 @@ def evaluate(ctx=context):
     for xs, ys, xlen, ylen in devset:
         loss = model(xs, ys, xlen, ylen)
         losses.append(float(loss.sum().asscalar()))
-    return sum(losses) / len(devset), sum(losses) / len(devset.label_cnt)
+    return sum(losses) / len(devset), sum(losses) / devset.label_cnt
 
 def train():
     best_model = None
