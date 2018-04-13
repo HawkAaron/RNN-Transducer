@@ -74,7 +74,7 @@ class Transducer(gluon.Block):
         y, hid = self.decoder.rnn(y, hid) # forward first zero
         y_seq = []; logp = 0
         for xi in h:
-            ytu = self.joint(y[0][0], xi)
+            ytu = self.joint(xi, y[0][0])
             ytu = mx.nd.log_softmax(ytu)
             yi = mx.nd.argmax(ytu, axis=0) # for Graves2012 transducer
             pred = int(yi.asscalar()); logp += float(ytu[yi].asscalar())
@@ -118,11 +118,11 @@ class Transducer(gluon.Block):
                         # A[i] -> A[j]
                         pred, _ = forward_step(A[i].k[-1], A[i].h)
                         idx = len(A[i].k)
-                        ytu = self.joint(pred, x)
+                        ytu = self.joint(x, pred)
                         logp = F.log_softmax(ytu).asnumpy()
                         curlogp = A[i].logp + float(logp[A[j].k[idx]])
                         for k in range(idx, len(A[j].k)-1):
-                            ytu = self.joint(A[j].g[k], x)
+                            ytu = self.joint(x, A[j].g[k])
                             logp = F.log_softmax(ytu, axis=0)
                             curlogp += float(logp[A[j].k[k+1]].asscalar())
                         A[j].logp = log_aplusb(A[j].logp, curlogp)
@@ -137,7 +137,7 @@ class Transducer(gluon.Block):
                 # calculate P(k|y_hat, t)
                 # get last label and hidden state
                 pred, hidden = forward_step(y_hat.k[-1], y_hat.h)
-                logp = F.log_softmax(self.joint(pred, x)).asnumpy() # log probability for each k
+                logp = F.log_softmax(self.joint(x, pred)).asnumpy() # log probability for each k
                 # for k \in vocab
                 for k in range(self.vocab_size):
                     yk = Sequence(y_hat)
