@@ -17,7 +17,12 @@
 * E2E criterion comparison (Baidu 2017): [Exploring Neural Transducers for End-to-End Speech Recognition](https://arxiv.org/abs/1707.07413)
 
 ## Run
-* run local:
+* Extract feature
+link kaldi timit example dirs (`local` `steps` `utils` )
+excute `run.sh` to extract 40 dim fbank feature
+run `feature_transform.sh` to get 123 dim feature as described in Graves2013
+
+* Train RNNT model:
 ```bash
 python train.py --init <path to initial rnnt model> --initam <path to initial CTC model> --initpm <path to initital PM model> \
 --lr 1e-3 --out exp/rnnt_lr1e-3 --schedule
