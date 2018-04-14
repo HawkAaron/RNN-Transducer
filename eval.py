@@ -38,9 +38,9 @@ with open('data/'+args.dataset+'/text', 'r') as f:
         line = line.split()
         label[line[0]] = line[1:]
 
-# Phone map
+# Phone map NOTE in Graves2012, no need to map
 with open('conf/phones.60-48-39.map', 'r') as f:
-    pmap = {0:0}
+    pmap = {rephone[0]:rephone[0]}
     for line in f:
         line = line.split()
         if len(line) < 3: continue
@@ -68,8 +68,8 @@ def decode():
             y, nll = model.beam_search(xs, args.beam)
         else:
             y, nll = model.greedy_decode(xs)
-        y = [pmap[rephone[i]] for i in y]
-        t = [pmap[i] for i in label[k]]
+        y = [rephone[i] for i in y]
+        t = label[k]
         y, t, e = distance(y, t)
         err += e; cnt += len(t)
         logging.info('[{}]: {}'.format(k, ' '.join(t)))
