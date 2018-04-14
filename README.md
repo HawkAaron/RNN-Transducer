@@ -24,20 +24,24 @@ run `feature_transform.sh` to get 123 dim feature as described in Graves2013
 
 * Train RNNT model:
 ```bash
-python train.py --init <path to initial rnnt model> --initam <path to initial CTC model> --initpm <path to initital PM model> \
---lr 1e-3 --out exp/rnnt_lr1e-3 --schedule
+python train.py --lr 1e-3 --bi --dropout .5 --out exp/rnnt_bi_lr1e-3 --schedule
 ```
 
 ## Evaluation
 Default only for RNNT
 * Greedy decoding:
 ```
-python eval.py <path to best model parameters>
+python eval.py <path to best model parameters> --bi
 ```
 * Beam search:
 ```
-python eval.py <path to best model parameters> --beam <beam size>
+python eval.py <path to best model parameters> --bi --beam <beam size>
 ```
+
+## Results
+* Transducer
+| Decode | PER |
+| greedy | 23.68 |
 
 ## Note
 * Current implementation support batch training, but for TIMIT, only do online training.
