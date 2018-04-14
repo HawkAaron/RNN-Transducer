@@ -1,15 +1,13 @@
 ## File description
 * eval.py: rnnt joint model decode
-* joint_model.py: rnnt model, which contains acoustic / phoneme model
+* model.py: rnnt model, which contains acoustic / phoneme model
+* model2012.py: rnnt model refer to Graves2012
 * rnnt_np.py: rnnt loss function implementation on mxnet, support for both symbol and gluon [refer to PyTorch implementation](https://github.com/awni/transducer)
-* utils.py: data process
+* DataLoader.py: data process
 * train.py: rnnt training script, can be initialized from CTC and PM model
-* train_log.py: rnnt training script with AM and PM PER log
 
 ## Directory description
-* data-fbank: training data set 
-* fbank: acoustic feature
-* lang: phoneme units and mapping
+* conf: kaldi feature extraction config
 
 ## Reference Paper
 * RNN Transducer (Graves 2012): [Sequence Transduction with Recurrent Neural Networks](https://arxiv.org/abs/1211.3711)
@@ -44,11 +42,12 @@ python eval.py <path to best model parameters> --bi --beam <beam size>
     | Decode | PER |
     |------|------|
     | greedy | 23.68 |
+    | beam 20 | 22.92 |
 
 ## Note
 * Current implementation support batch training, but for TIMIT, only do online training.
 * The implementation of Transduction loss is really slow, about 5 times running time of CTC.
-* If you train RNNT use `train_log.py`, the PER (calculated seperately in CTC training way.) doesn't change, it has nothing to do with RNNT joint PER
+* If you train RNNT ~~using `train_log.py`~~, the PER (calculated seperately in CTC training way.) doesn't change, it has nothing to do with RNNT joint PER.
 
 ## TODO
 * RNNT loss accelaration using CPP
