@@ -40,8 +40,10 @@ python eval.py <path to best model parameters> --bi --beam <beam size>
 
 ## Results
 * Transducer
-| Decode | PER |
-| greedy | 23.68 |
+
+    | Decode | PER |
+    |------|------|
+    | greedy | 23.68 |
 
 ## Note
 * Current implementation support batch training, but for TIMIT, only do online training.
