@@ -18,6 +18,10 @@ class RNNModel(gluon.Block):
         h = self.rnn(xs)
         return self.decoder(h)
 
+    def decode(self, xs, hidden):
+        h, hidden = self.rnn(xs, hidden)
+        return self.decoder(h), hidden
+
 class Transducer(gluon.Block):
     ''' When joint training, remove RNNModel decoder layer '''
     def __init__(self, vocab_size, num_hidden, num_layers, dropout=0, blank=0, bidirectional=False):
@@ -56,7 +60,7 @@ class Transducer(gluon.Block):
         h = self.encoder(xs)[0]
         y = mx.nd.zeros((1, 1, self.vocab_size-1)) # first zero vector 
         hid = [mx.nd.zeros((1, 1, self.num_hidden))] * 2 # support for one sequence
-        y, hid = self.decoder(y, hid) # forward first zero
+        y, hid = self.decoder.decode(y, hid) # forward first zero
         y_seq = []; logp = 0
         for xi in h:
             ytu = mx.nd.log_softmax(y[0][0] + xi)
@@ -65,7 +69,8 @@ class Transducer(gluon.Block):
             if pred != self.blank:
                 y_seq.append(pred)
                 y = mx.nd.one_hot(yi.reshape((1,1))-1, self.vocab_size-1)
-                y, hid = self.decoder(y, hid) # forward first zero
+                y, hid = self.decoder.decode(y, hid) # forward first zero
+
         return y_seq, -logp
 
     def beam_search(self, xs, W=10, prefix=True):
@@ -76,7 +81,7 @@ class Transducer(gluon.Block):
         def forward_step(label, hidden):
             ''' `label`: int '''
             label = mx.nd.one_hot(mx.nd.full((1,1), label-1, dtype=np.int32), self.vocab_size-1)
-            pred, hidden = self.decoder(label, hidden)
+            pred, hidden = self.decoder.decode(label, hidden)
             return pred[0][0], hidden
 
         def isprefix(a, b):

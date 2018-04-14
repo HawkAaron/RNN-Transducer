@@ -27,11 +27,11 @@ context = mx.cpu(0)
 
 # Load model
 Model = RNNModel if args.ctc else Transducer
-model = Model(123, 49, 250, 3, bidirectional=args.bi)
+model = Model(40, 128, 2, bidirectional=args.bi)
 model.collect_params().load(args.model, context)
 # data set
 feat = 'ark:copy-feats scp:data/{}/feats.scp ark:- | apply-cmvn --utt2spk=ark:data/{}/utt2spk scp:data/{}/cmvn.scp ark:- ark:- |\
- add-deltas --delta-order=2 ark:- ark:- | nnet-forward data/final.feature_transform ark:- ark:- |'.format(args.dataset, args.dataset, args.dataset)
+ add-deltas --delta-order=1 ark:- ark:- | nnet-forward data/final.feature_transform ark:- ark:- |'.format(args.dataset, args.dataset, args.dataset)
 with open('data/'+args.dataset+'/text', 'r') as f:
     label = {}
     for line in f:
@@ -39,7 +39,7 @@ with open('data/'+args.dataset+'/text', 'r') as f:
         label[line[0]] = line[1:]
 
 # Phone map
-with open('data/lang/phones.60-48-39.map', 'r') as f:
+with open('conf/phones.60-48-39.map', 'r') as f:
     pmap = {0:0}
     for line in f:
         line = line.split()
