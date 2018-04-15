@@ -3,6 +3,7 @@ from mxnet import gluon
 from mxnet.gluon import nn, rnn
 import numpy as np
 from rnnt_np import RNNTLoss
+from ctc_decoder import decode as ctc_beam
 
 class RNNModel(gluon.Block):
     """A model with an encoder, recurrent layer, and a decoder."""
@@ -22,6 +23,18 @@ class RNNModel(gluon.Block):
         h, hidden = self.rnn(xs, hidden)
         return self.decoder(h), hidden
 
+    def greedy_decode(self, xs):
+        xs = self(xs)[0] # only one sequence
+        xs = mx.nd.log_softmax(xs, axis=1)
+        pred = mx.nd.argmax(xs, axis=1)
+        logp = xs[list(range(xs.shape[0])), pred].sum().asscalar()
+        return pred.asnumpy(), -logp
+
+    def beam_search(self, xs, W):
+        xs = self(xs)[0]
+        logp = mx.nd.log_softmax(xs, axis=1)
+        return ctc_beam(logp.asnumpy(), W)
+    
 class Transducer(gluon.Block):
     ''' When joint training, remove RNNModel decoder layer '''
     def __init__(self, vocab_size, num_hidden, num_layers, dropout=0, blank=0, bidirectional=False):
