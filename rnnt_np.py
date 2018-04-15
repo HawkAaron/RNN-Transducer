@@ -80,6 +80,7 @@ def transduce(log_probs, labels, blank=0):
 def transduce_batch(log_probs, labels, flen, glen, blank=0):
     grads = np.zeros_like(log_probs)
     costs = []
+    # TODO parallel loop
     for b in range(log_probs.shape[0]):
         t = int(flen[b])
         u = int(glen[b]) + 1
@@ -95,7 +96,6 @@ class RNNTransducer(mx.operator.CustomOp):
     1. This class computes forward and backward variables in the log domain.
     2. This class do not apply the softmax function to inputs, since the gradient calculation will be easily overflow. 
 
-    NOTE that mxnet ndarray is computed on backend engine, we can use gpu and cpu parallel.
     """
     def __init__(self, blank):
         self.blank = blank
@@ -103,7 +103,7 @@ class RNNTransducer(mx.operator.CustomOp):
     def forward(self, is_train, req, in_data, out_data, aux):
         '''
         `logp`: am & pm joint probability, layout 'BTUV'
-        `y`: label sequence (blank, y1, ..., yU), layout 'BU', but here should have blank TODO have blank
+        `y`: label sequence (blank, y1, ..., yU), layout 'BU'
         `flen`: acoustic model outputs sequence true length <= T
         `glen`: label sequence length <= U
         '''
@@ -149,7 +149,7 @@ class RNNTLoss(mx.gluon.loss.Loss):
         return loss
 
 if __name__ == '__main__':
-    T = 400; U = 300; B = 1; V = 50
+    T = 400; U = 300; B = 8; V = 50
     ctx = mx.cpu()
     def joint_test():
         ytu = mx.nd.softmax(mx.nd.random_uniform(-10, 10, shape=(B, T, U+1, V), ctx=ctx, dtype=np.float32), axis=3)
