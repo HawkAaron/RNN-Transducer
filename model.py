@@ -28,13 +28,12 @@ class Transducer(gluon.Block):
         self.loss = RNNTLoss(blank)
         self.blank = blank
         with self.name_scope():
-            # acoustic model
-            self.encoder = RNNModel(vocab_size, num_hidden, num_layers, dropout, bidirectional)
+            # acoustic model NOTE only initialize encoder.rnn, we can reuse encoder.decoder
+            self.encoder = RNNModel(num_hidden, num_hidden, num_layers, dropout, bidirectional)
             # prediction model
-            self.decoder = RNNModel(vocab_size, num_hidden, 1, dropout)
+            self.decoder = rnn.LSTM(num_hidden, 1, 'NTC', dropout=dropout)
             # joint 
-            input_size = 3*num_hidden if bidirectional else 2*num_hidden
-            self.fc1 = nn.Dense(num_hidden, flatten=False, in_units=input_size)
+            self.fc1 = nn.Dense(num_hidden, flatten=False, in_units=2*num_hidden)
             self.fc2 = nn.Dense(vocab_size, flatten=False, in_units=num_hidden)
     
     def joint(self, f, g):
@@ -43,16 +42,16 @@ class Transducer(gluon.Block):
         NOTE f and g must have the same size except the last dim '''
         dim = len(f.shape) - 1
         out = mx.nd.concat(f, g, dim=dim)
-        out = mx.nd.relu(self.fc1(out))
+        out = mx.nd.tanh(self.fc1(out))
         return self.fc2(out)
 
     def forward(self, xs, ys, xlen, ylen):
         # forward acoustic model
-        f = self.encoder.rnn(xs)
+        f = self.encoder(xs)
         # forward prediction model
         ymat = mx.nd.one_hot(ys-1, self.vocab_size-1) # pm input size 
         ymat = mx.nd.concat(mx.nd.zeros((ymat.shape[0], 1, ymat.shape[2]), ctx=ymat.context), ymat, dim=1) # concat zero vector
-        g = self.decoder.rnn(ymat)
+        g = self.decoder(ymat)
         # rnnt loss
         f1 = mx.nd.expand_dims(f, axis=2) # BT1H
         g1 = mx.nd.expand_dims(g, axis=1) # B1UH
@@ -68,10 +67,10 @@ class Transducer(gluon.Block):
         `weight`: acoustic score weight
         '''
         # forward acoustic model TODO streaming decode
-        h = self.encoder.rnn(xs)[0]
+        h = self.encoder(xs)[0]
         y = mx.nd.zeros((1, 1, self.vocab_size-1)) # first zero vector 
         hid = [mx.nd.zeros((1, 1, self.num_hidden))] * 2 # support for one sequence
-        y, hid = self.decoder.rnn(y, hid) # forward first zero
+        y, hid = self.decoder(y, hid) # forward first zero
         y_seq = []; logp = 0
         for xi in h:
             ytu = self.joint(xi, y[0][0])
@@ -81,7 +80,7 @@ class Transducer(gluon.Block):
             if pred != self.blank:
                 y_seq.append(pred)
                 y = mx.nd.one_hot(yi.reshape((1,1))-1, self.vocab_size-1)
-                y, hid = self.decoder.rnn(y, hid) # forward first zero
+                y, hid = self.decoder(y, hid) # forward first zero
         return y_seq, -logp
 
     def beam_search(self, xs, W=10, prefix=True):
@@ -92,7 +91,7 @@ class Transducer(gluon.Block):
         def forward_step(label, hidden):
             ''' `label`: int '''
             label = mx.nd.one_hot(mx.nd.full((1,1), label-1, dtype=np.int32), self.vocab_size-1)
-            pred, hidden = self.decoder.rnn(label, hidden)
+            pred, hidden = self.decoder(label, hidden)
             return pred[0][0], hidden
 
         def isprefix(a, b):
@@ -103,7 +102,7 @@ class Transducer(gluon.Block):
             return True
 
         F = mx.nd
-        xs = self.encoder.rnn(xs)[0]
+        xs = self.encoder(xs)[0]
         B = [Sequence(blank=self.blank, hidden=[mx.nd.zeros((1, 1, self.num_hidden))] * 2)]
         for i, x in enumerate(xs):
             if prefix: sorted(B, key=lambda a: len(a.k), reverse=True) # larger sequence first add
