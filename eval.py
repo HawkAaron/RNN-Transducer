@@ -42,8 +42,8 @@ with open('conf/phones.60-48-39.map', 'r') as f:
     pmap = {rephone[0]:rephone[0]}
     for line in f:
         line = line.split()
-        if len(line) < 3: pmap[line[1]] = rephone[0]
-        else: pmap[line[1]] = line[2]
+        if len(line) < 3: pmap[line[0]] = rephone[0]
+        else: pmap[line[0]] = line[2]
 print(pmap)
 
 def distance(y, t, blank=rephone[0]):
