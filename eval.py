@@ -8,7 +8,7 @@ import editdistance
 import kaldi_io
 import mxnet as mx
 import numpy as np
-from model2012 import Transducer, RNNModel
+from model import Transducer, RNNModel
 from DataLoader import TokenAcc, rephone
 
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')
@@ -27,7 +27,7 @@ context = mx.cpu(0)
 
 # Load model
 Model = RNNModel if args.ctc else Transducer
-model = Model(40, 128, 2, bidirectional=args.bi)
+model = Model(62, 250, 3, bidirectional=args.bi)
 model.collect_params().load(args.model, context)
 # data set
 feat = 'ark:copy-feats scp:data/{}/feats.scp ark:- | apply-cmvn --utt2spk=ark:data/{}/utt2spk scp:data/{}/cmvn.scp ark:- ark:- |\
@@ -60,6 +60,7 @@ def distance(y, t, blank=rephone[0]):
     return y, t, editdistance.eval(y, t)
 
 def decode():
+    # TODO seperate decode and score
     logging.info('Decoding Transduction model:')
     err = cnt = 0
     for i, (k, v) in enumerate(kaldi_io.read_mat_ark(feat)):

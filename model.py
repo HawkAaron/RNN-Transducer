@@ -62,10 +62,6 @@ class Transducer(gluon.Block):
         return loss
     
     def greedy_decode(self, xs):
-        '''
-        TODO batch support / gpu support
-        `weight`: acoustic score weight
-        '''
         # forward acoustic model TODO streaming decode
         h = self.encoder(xs)[0]
         y = mx.nd.zeros((1, 1, self.vocab_size-1)) # first zero vector 

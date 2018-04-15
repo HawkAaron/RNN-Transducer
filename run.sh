@@ -48,6 +48,20 @@ utils/prepare_lang.sh --sil-prob 0.0 --position-dependent-phones false --num-sil
 
 local/timit_format_data.sh
 
+echo ============================================================================
+echo "         Fbank Feature Extration & CMVN for Training and Test set          "
+echo ============================================================================
+
+# Now make Fbank features.
+fbankdir=fbank
+
+train_cmd='run.pl --mem 4G'
+for x in train dev test; do
+  steps/make_fbank.sh --cmd "$train_cmd" --nj $feats_nj data/$x exp/make_fbank/$x $fbankdir
+  steps/compute_cmvn_stats.sh data/$x exp/make_fbank/$x $fbankdir
+done
+
+exit
 
 echo ============================================================================
 echo "         MFCC Feature Extration & CMVN for Training and Test set          "
@@ -56,13 +70,11 @@ echo ===========================================================================
 # Now make MFCC features.
 mfccdir=mfcc
 
-train_cmd='run.pl --mem 4G'
+
 for x in train dev test; do
   steps/make_mfcc.sh --cmd "$train_cmd" --nj $feats_nj data/$x exp/make_mfcc/$x $mfccdir
   steps/compute_cmvn_stats.sh data/$x exp/make_mfcc/$x $mfccdir
 done
-
-exit
 
 echo ============================================================================
 echo "                     MonoPhone Training & Decoding                        "

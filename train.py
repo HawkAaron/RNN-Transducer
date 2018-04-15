@@ -11,7 +11,7 @@ import numpy as np
 from mxnet import autograd, gluon
 from mxnet.gluon import contrib
 from DataLoader import SequentialLoader, TokenAcc
-from model2012 import Transducer
+from model import Transducer
 
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')
 parser.add_argument('--lr', type=float, default=1e-3,
@@ -54,18 +54,17 @@ devset = SequentialLoader('dev', args.batch_size, context)
 # Build the model
 ###############################################################################
 
-model = Transducer(40, 128, 2, args.dropout, bidirectional=args.bi)
+model = Transducer(62, 250, 3, args.dropout, bidirectional=args.bi)
 # model.collect_params().initialize(mx.init.Xavier(), ctx=context)
 if args.init:
     model.collect_params().load(args.init, context)
 elif args.initam or args.initpm:
     model.initialize(mx.init.Uniform(0.1), ctx=context)
+    # NOTE only use lstm layer
     if args.initam:
-        model.collect_params('transducer0_rnnmodel0').load(args.initam, context, True, True)
+        model.collect_params('transducer0_rnnmodel0_lstm0').load(args.initam, context, True, True)
     if args.initpm:
-        model.collect_params('transducer0_rnnmodel1').load(args.initpm, context, True, True)
-    # model.collect_params().save(args.out+'/init')
-    # print('initial model save to', args.out+'/init')
+        model.collect_params('transducer0_lstm0').load(args.initpm, context, True, True)
 else:
     model.initialize(mx.init.Uniform(0.1), ctx=context)
 

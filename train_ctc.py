@@ -74,7 +74,7 @@ devset = SequentialLoader('dev', args.batch_size, context)
 # Build the model
 ###############################################################################
 
-model = RNNModel(40, 128, 2, args.dropout, bidirectional=args.bi)
+model = RNNModel(62, 250, 3, args.dropout, bidirectional=args.bi)
 if args.init: model.collect_params().load(args.init, context)
 else: model.initialize(mx.init.Uniform(0.1), ctx=context)
 
