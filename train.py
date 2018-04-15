@@ -4,7 +4,6 @@ import math
 import os
 import time
 import collections
-import editdistance
 import kaldi_io
 import mxnet as mx
 import numpy as np

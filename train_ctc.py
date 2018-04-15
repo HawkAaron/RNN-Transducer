@@ -3,13 +3,9 @@ import logging
 import math
 import os
 import time
-import collections
-import editdistance
-import kaldi_io
 import mxnet as mx
 import numpy as np
 from mxnet import autograd, gluon
-from mxnet.gluon import contrib
 from DataLoader import SequentialLoader, TokenAcc
 from model import RNNModel
 

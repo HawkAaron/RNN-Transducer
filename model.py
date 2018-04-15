@@ -2,7 +2,7 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn, rnn
 import numpy as np
-from rnnt_np import RNNTLoss
+from rnnt_numba import RNNTLoss
 
 class RNNModel(gluon.Block):
     """A model with an encoder, recurrent layer, and a decoder."""

@@ -46,6 +46,12 @@ python eval.py <path to best model parameters> --bi --beam <beam size>
 * The implementation of Transduction loss is really slow, about 5 times running time of CTC.
 * If you train RNNT ~~using `train_log.py`~~, the PER (calculated seperately in CTC training way.) doesn't change, it has nothing to do with RNNT joint PER.
 
+## Requirements
+* Python 3.6
+* MxNet >=1.0.0
+* numpy 1.14
+* numba 0.37
+
 ## TODO
 * RNNT loss accelaration using CPP
 * beam serach accelaration
