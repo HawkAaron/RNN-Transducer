@@ -1,13 +1,6 @@
 import mxnet as mx
 import numpy as np
 
-def logAPlusB(a, b):
-    '''
-    Approximation of  log(a + b) = log(a) + log(1 + b/a), if b < a
-                                 = log(b) + log(1 + a/b), if a < b
-    '''
-    return np.maximum(a, b) + np.log1p(np.exp(-np.abs(a-b)))
-
 def forward_pass(log_probs, labels, blank):
 
     T, U, _ = log_probs.shape
@@ -22,7 +15,7 @@ def forward_pass(log_probs, labels, blank):
         for u in range(1, U):
             no_emit = alphas[t-1, u] + log_probs[t-1, u, blank]
             emit = alphas[t, u-1] + log_probs[t, u-1, labels[u-1]]
-            alphas[t, u] = logAPlusB(emit, no_emit)
+            alphas[t, u] = np.logaddexp(emit, no_emit)
 
     loglike = alphas[T-1, U-1] + log_probs[T-1, U-1, blank]
     return alphas, loglike
@@ -43,7 +36,7 @@ def backward_pass(log_probs, labels, blank):
         for u in reversed(range(U-1)):
             no_emit = betas[t+1, u] + log_probs[t, u, blank]
             emit = betas[t, u+1] + log_probs[t, u, labels[u]]
-            betas[t, u] = logAPlusB(emit, no_emit)
+            betas[t, u] = np.logaddexp(emit, no_emit)
 
     return betas, betas[0, 0]
 
