@@ -1,10 +1,14 @@
+# End-to-End Speech Recognition using RNN-Transducer
 ## File description
 * eval.py: rnnt joint model decode
 * model.py: rnnt model, which contains acoustic / phoneme model
 * model2012.py: rnnt model refer to Graves2012
+* seq2seq/*: seq2seq with attention 
 * rnnt_np.py: rnnt loss function implementation on mxnet, support for both symbol and gluon [refer to PyTorch implementation](https://github.com/awni/transducer)
 * DataLoader.py: data process
 * train.py: rnnt training script, can be initialized from CTC and PM model
+* train_ctc.py: ctc training script
+* train_att.py: attention training script
 
 ## Directory description
 * conf: kaldi feature extraction config
@@ -13,6 +17,7 @@
 * RNN Transducer (Graves 2012): [Sequence Transduction with Recurrent Neural Networks](https://arxiv.org/abs/1211.3711)
 * RNNT joint (Graves 2013): [Speech Recognition with Deep Recurrent Neural Networks](https://arxiv.org/abs/1303.5778 )
 * E2E criterion comparison (Baidu 2017): [Exploring Neural Transducers for End-to-End Speech Recognition](https://arxiv.org/abs/1707.07413)
+* Seq2Seq-Attention: [Attention-Based Models for Speech Recognition](https://arxiv.org/abs/1506.07503)
 
 ## Run
 * Extract feature
@@ -35,14 +40,6 @@ python eval.py <path to best model parameters> --bi
 ```
 python eval.py <path to best model parameters> --bi --beam <beam size>
 ```
-
-## Results
-* Transducer
-
-    | Decode | PER |
-    |------|------|
-    | greedy | 23.68 |
-    | beam 20 | 22.92 |
 
 ## Note
 * Current implementation support batch training, but for TIMIT, only do online training.
