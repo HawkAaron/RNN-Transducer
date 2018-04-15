@@ -95,7 +95,7 @@ class RNNTransducer(mx.operator.CustomOp):
 
     def forward(self, is_train, req, in_data, out_data, aux):
         '''
-        `logp`: am & pm joint probability, layout 'BTUV'
+        `ytu`: am & pm joint probability, layout 'BTUV'
         `y`: label sequence (blank, y1, ..., yU), layout 'BU'
         `flen`: acoustic model outputs sequence true length <= T
         `glen`: label sequence length <= U
