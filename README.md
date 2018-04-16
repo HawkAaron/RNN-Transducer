@@ -38,6 +38,7 @@ python eval.py <path to best model parameters> --bi --beam <beam size>
 
 ## Results
 * CTC
+
     | Decode | PER |
     |-------|---|
     | greedy | 22.27 |
