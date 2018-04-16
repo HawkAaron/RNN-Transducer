@@ -17,8 +17,8 @@
 ## Run
 * Extract feature
 link kaldi timit example dirs (`local` `steps` `utils` )
-excute `run.sh` to extract 40 dim fbank feature
-run `feature_transform.sh` to get 123 dim feature as described in Graves2013
+excute `run.sh` to extract 13 dim mfcc feature
+run `feature_transform.sh` to get 26 dim feature as described in Graves2012
 
 * Train RNNT model:
 ```bash
