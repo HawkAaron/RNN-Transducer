@@ -41,8 +41,10 @@ python eval.py <path to best model parameters> --bi --beam <beam size>
 
     | Decode | PER |
     |------|------|
-    | greedy | 23.68 |
-    | beam 20 | 22.92 |
+    | greedy | 23.02 |
+    | beam 20 | 22.45 |
+    | beam 40 | 22.34 |
+    | beam 60 | 21.92 |
 
 ## Note
 * Current implementation support batch training, but for TIMIT, only do online training.
