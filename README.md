@@ -48,7 +48,7 @@ python eval.py <path to best model parameters> --bi --beam <beam size>
 
 ## Requirements
 * Python 3.6
-* MxNet >=1.0.0
+* MxNet 1.1.0
 * numpy 1.14
 * numba 0.37
 
