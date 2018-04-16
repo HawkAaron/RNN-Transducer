@@ -44,6 +44,8 @@ parser.add_argument('--dropout', type=float, default=0.5,
                     help='dropout applied to layers (0 = no dropout)')
 parser.add_argument('--bi', default=False, action='store_true', 
                     help='whether use bidirectional lstm')
+parser.add_argument('--noise', type=float, default=0, 
+                    help='add gaussian noise to inputs')
 parser.add_argument('--log-interval', type=int, default=50, metavar='N',
                     help='report interval')
 parser.add_argument('--out', type=str, default='exp/ctc_lr1e-3',
@@ -98,6 +100,9 @@ def train():
         totl0 = 0
         start_time = time.time()
         for i, (xs, ys, xlen, ylen) in enumerate(trainset):
+            if args.noise > 0: 
+                xs += mx.nd.normal(0, args.noise, xs.shape[-1], ctx=xs.context)
+
             with autograd.record():
                 out = model(xs)
                 loss = criterion(out, ys, xlen, ylen)
