@@ -5,6 +5,7 @@ import os
 import time
 import collections
 import editdistance
+import random
 import kaldi_io
 import mxnet as mx
 import numpy as np
@@ -42,6 +43,8 @@ with open(os.path.join(args.out, 'args'), 'w') as f:
     f.write(str(args))
 if args.stdout: logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%m-%d %H:%M:%S", level=logging.INFO)
 else: logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%m-%d %H:%M:%S", filename=os.path.join(args.out, 'train.log'), level=logging.INFO)
+mx.random.seed(1024)
+random.seed(1024)
 
 context = mx.gpu(0)
 # Dataset
