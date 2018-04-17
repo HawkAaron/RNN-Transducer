@@ -41,6 +41,21 @@ python eval.py <path to best model parameters> --bi
 python eval.py <path to best model parameters> --bi --beam <beam size>
 ```
 
+## Results
+* CTC 
+
+    | Decode | PER |
+    | --- | --- |
+    | greedy | 20.36 |
+    | beam 100 | 20.03 |
+
+* Transducer
+
+    | Decode | PER |
+    | --- | --- |
+    | greedy | 20.74 |
+    | beam 40 | 19.84 |
+
 ## Note
 * Current implementation support batch training, but for TIMIT, only do online training.
 * The implementation of Transduction loss is really slow, about 5 times running time of CTC.
