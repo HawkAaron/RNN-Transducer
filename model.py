@@ -3,7 +3,7 @@ from mxnet import gluon
 from mxnet.gluon import nn, rnn
 import numpy as np
 from ctc_decoder import decode as ctc_beam
-from rnnt_numba import RNNTLoss
+from rnnt_mx import RNNTLoss
 
 class RNNModel(gluon.Block):
     """A model with an encoder, recurrent layer, and a decoder."""
@@ -74,7 +74,7 @@ class Transducer(gluon.Block):
         g1 = mx.nd.expand_dims(g, axis=1) # B1UH
         f1 = mx.nd.broadcast_axis(f1, 2, g1.shape[2])
         g1 = mx.nd.broadcast_axis(g1, 1, f1.shape[1])
-        ytu = mx.nd.softmax(self.joint(f1, g1), axis=3)
+        ytu = mx.nd.log_softmax(self.joint(f1, g1), axis=3)
         loss = self.loss(ytu, ys, xlen, ylen)
         return loss
     

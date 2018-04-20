@@ -2,7 +2,7 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn, rnn
 import numpy as np
-from rnnt_np import RNNTLoss
+from rnnt_mx import RNNTLoss
 
 class RNNModel(gluon.Block):
     """A model with an encoder, recurrent layer, and a decoder."""
@@ -47,7 +47,7 @@ class Transducer(gluon.Block):
         # rnnt loss
         f = mx.nd.expand_dims(f, axis=2) # BT1H
         g = mx.nd.expand_dims(g, axis=1) # B1UH
-        ytu = mx.nd.softmax(f + g, axis=3)
+        ytu = mx.nd.log_softmax(f + g, axis=3)
         loss = self.loss(ytu, ys, xlen, ylen)
         return loss
     
