@@ -102,7 +102,7 @@ class RNNTransducer(mx.operator.CustomOp):
         '''
         log_ytu, y, flen, glen = in_data
 
-        loss, grad = transduce_batch(log_ytu.asnumpy(), y.asnumpy(), flen.asnumpy(), glen.asnumpy(), self.blank)
+        loss, grad = transduce_batch(log_ytu.asnumpy(), y.asnumpy().astype(np.int32), flen.asnumpy(), glen.asnumpy(), self.blank)
         self.saved_tensors = mx.nd.array(grad, ctx=log_ytu.context),
 
         self.assign(out_data[0], req[0], mx.nd.array(loss, ctx=log_ytu.context))
