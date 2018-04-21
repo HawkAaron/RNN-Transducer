@@ -42,7 +42,7 @@ class Transducer(gluon.Block):
         self.num_hidden = num_hidden
         self.num_layers = num_layers
         self.vocab_size = vocab_size
-        self.loss = RNNTLoss(blank)
+        self.loss = RNNTLoss(blank_label=blank)
         self.blank = blank
         with self.name_scope():
             # acoustic model NOTE only initialize encoder.rnn, we can reuse encoder.decoder
