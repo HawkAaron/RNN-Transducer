@@ -11,7 +11,7 @@ import numpy as np
 from mxnet import autograd, gluon
 from mxnet.gluon import contrib
 from DataLoader import SequentialLoader, TokenAcc
-from model2012 import Transducer
+from model import Transducer
 
 parser = argparse.ArgumentParser(description='MXNet Autograd RNN/LSTM Acoustic Model on TIMIT.')
 parser.add_argument('--lr', type=float, default=1e-3,
@@ -102,7 +102,7 @@ def train():
                 grads = [p.grad(context) for p in model.collect_params().values()]
                 gluon.utils.clip_global_norm(grads, args.gradclip)
 
-            trainer.step(args.batch_size, ignore_stale_grad=True)
+            trainer.step(args.batch_size)
             totl0 += losses[-1]
 
             if i % args.log_interval == 0 and i > 0:

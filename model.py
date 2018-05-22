@@ -2,7 +2,7 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn, rnn
 import numpy as np
-from rnnt_np import RNNTLoss
+from ctc_decoder import decode as ctc_beam
 
 class RNNModel(gluon.Block):
     """A model with an encoder, recurrent layer, and a decoder."""
@@ -18,6 +18,22 @@ class RNNModel(gluon.Block):
         h = self.rnn(xs)
         return self.decoder(h)
 
+    def decode(self, xs, hidden):
+        h, hidden = self.rnn(xs, hidden)
+        return self.decoder(h), hidden
+
+    def greedy_decode(self, xs):
+        xs = self(xs)[0] # only one sequence
+        xs = mx.nd.log_softmax(xs, axis=1)
+        pred = mx.nd.argmax(xs, axis=1)
+        logp = xs[list(range(xs.shape[0])), pred].sum().asscalar()
+        return pred.asnumpy(), -logp
+
+    def beam_search(self, xs, W):
+        xs = self(xs)[0]
+        logp = mx.nd.log_softmax(xs, axis=1)
+        return ctc_beam(logp.asnumpy(), W)
+    
 class Transducer(gluon.Block):
     ''' When joint training, remove RNNModel decoder layer '''
     def __init__(self, vocab_size, num_hidden, num_layers, dropout=0, blank=0, bidirectional=False):
@@ -25,26 +41,14 @@ class Transducer(gluon.Block):
         self.num_hidden = num_hidden
         self.num_layers = num_layers
         self.vocab_size = vocab_size
-        self.loss = RNNTLoss(blank)
+        self.loss = gluon.loss.RNNTLoss(blank_label=blank)
         self.blank = blank
         with self.name_scope():
-            # acoustic model NOTE only initialize encoder.rnn, we can reuse encoder.decoder
-            self.encoder = RNNModel(num_hidden, num_hidden, num_layers, dropout, bidirectional)
+            # acoustic model
+            self.encoder = RNNModel(vocab_size, num_hidden, num_layers, dropout, bidirectional)
             # prediction model
-            self.decoder = rnn.LSTM(num_hidden, 1, 'NTC', dropout=dropout)
-            # joint 
-            self.fc1 = nn.Dense(num_hidden, flatten=False, in_units=2*num_hidden)
-            self.fc2 = nn.Dense(vocab_size, flatten=False, in_units=num_hidden)
+            self.decoder = RNNModel(vocab_size, num_hidden, 1, dropout)
     
-    def joint(self, f, g):
-        ''' `f`: encoder lstm output (B,T,U,2H) expanded
-        `g`: decoder lstm output (B,T,U,H) expanded
-        NOTE f and g must have the same size except the last dim '''
-        dim = len(f.shape) - 1
-        out = mx.nd.concat(f, g, dim=dim)
-        out = mx.nd.tanh(self.fc1(out))
-        return self.fc2(out)
-
     def forward(self, xs, ys, xlen, ylen):
         # forward acoustic model
         f = self.encoder(xs)
@@ -52,13 +56,8 @@ class Transducer(gluon.Block):
         ymat = mx.nd.one_hot(ys-1, self.vocab_size-1) # pm input size 
         ymat = mx.nd.concat(mx.nd.zeros((ymat.shape[0], 1, ymat.shape[2]), ctx=ymat.context), ymat, dim=1) # concat zero vector
         g = self.decoder(ymat)
-        # rnnt loss
-        f1 = mx.nd.expand_dims(f, axis=2) # BT1H
-        g1 = mx.nd.expand_dims(g, axis=1) # B1UH
-        f1 = mx.nd.broadcast_axis(f1, 2, g1.shape[2])
-        g1 = mx.nd.broadcast_axis(g1, 1, f1.shape[1])
-        ytu = mx.nd.softmax(self.joint(f1, g1), axis=3)
-        loss = self.loss(ytu, ys, xlen, ylen)
+
+        loss = self.loss(f, g, ys, xlen, ylen)
         return loss
     
     def greedy_decode(self, xs):
@@ -70,17 +69,17 @@ class Transducer(gluon.Block):
         h = self.encoder(xs)[0]
         y = mx.nd.zeros((1, 1, self.vocab_size-1)) # first zero vector 
         hid = [mx.nd.zeros((1, 1, self.num_hidden))] * 2 # support for one sequence
-        y, hid = self.decoder(y, hid) # forward first zero
+        y, hid = self.decoder.decode(y, hid) # forward first zero
         y_seq = []; logp = 0
         for xi in h:
-            ytu = self.joint(xi, y[0][0])
-            ytu = mx.nd.log_softmax(ytu)
+            ytu = mx.nd.log_softmax(y[0][0] + xi)
             yi = mx.nd.argmax(ytu, axis=0) # for Graves2012 transducer
             pred = int(yi.asscalar()); logp += float(ytu[yi].asscalar())
             if pred != self.blank:
                 y_seq.append(pred)
                 y = mx.nd.one_hot(yi.reshape((1,1))-1, self.vocab_size-1)
-                y, hid = self.decoder(y, hid) # forward first zero
+                y, hid = self.decoder.decode(y, hid) # forward first zero
+
         return y_seq, -logp
 
     def beam_search(self, xs, W=10, prefix=True):
@@ -91,7 +90,7 @@ class Transducer(gluon.Block):
         def forward_step(label, hidden):
             ''' `label`: int '''
             label = mx.nd.one_hot(mx.nd.full((1,1), label-1, dtype=np.int32), self.vocab_size-1)
-            pred, hidden = self.decoder(label, hidden)
+            pred, hidden = self.decoder.decode(label, hidden)
             return pred[0][0], hidden
 
         def isprefix(a, b):
@@ -117,12 +116,10 @@ class Transducer(gluon.Block):
                         # A[i] -> A[j]
                         pred, _ = forward_step(A[i].k[-1], A[i].h)
                         idx = len(A[i].k)
-                        ytu = self.joint(x, pred)
-                        logp = F.log_softmax(ytu).asnumpy()
+                        logp = F.log_softmax(pred + x).asnumpy()
                         curlogp = A[i].logp + float(logp[A[j].k[idx]])
                         for k in range(idx, len(A[j].k)-1):
-                            ytu = self.joint(x, A[j].g[k])
-                            logp = F.log_softmax(ytu, axis=0)
+                            logp = F.log_softmax(A[j].g[k] + x, axis=0)
                             curlogp += float(logp[A[j].k[k+1]].asscalar())
                         A[j].logp = log_aplusb(A[j].logp, curlogp)
 
@@ -136,7 +133,7 @@ class Transducer(gluon.Block):
                 # calculate P(k|y_hat, t)
                 # get last label and hidden state
                 pred, hidden = forward_step(y_hat.k[-1], y_hat.h)
-                logp = F.log_softmax(self.joint(x, pred)).asnumpy() # log probability for each k
+                logp = F.log_softmax(pred + x).asnumpy() # log probability for each k
                 # for k \in vocab
                 for k in range(self.vocab_size):
                     yk = Sequence(y_hat)

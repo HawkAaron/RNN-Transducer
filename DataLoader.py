@@ -21,10 +21,10 @@ def zero_pad_concat(inputs):
 
 def convert(inputs, labels, ctx):
     # length no need move to gpu
-    xlen = mx.nd.array([i.shape[0] for i in inputs], ctx=ctx)
-    ylen = mx.nd.array([i.shape[0] for i in labels], ctx=ctx)
-    xs = mx.nd.array(zero_pad_concat(inputs), ctx=ctx)
-    ys = mx.nd.array(zero_pad_concat(labels), ctx=ctx)
+    xlen = mx.nd.array([i.shape[0] for i in inputs], dtype='int32', ctx=ctx)
+    ylen = mx.nd.array([i.shape[0] for i in labels], dtype='int32', ctx=ctx)
+    xs = mx.nd.array(zero_pad_concat(inputs), dtype='float32', ctx=ctx)
+    ys = mx.nd.array(zero_pad_concat(labels), dtype='int32', ctx=ctx)
     return xs, ys, xlen, ylen
 
 class SequentialLoader:
