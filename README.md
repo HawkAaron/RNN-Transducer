@@ -21,7 +21,7 @@
 
 ## Run
 * Compile RNNT Loss
-Follow the instructions in [here](https://github.com/HawkAaron/mxnet-transducer/tree/add_network) to compile MXNET with RNNT loss.
+Follow the instructions in [here](https://github.com/HawkAaron/mxnet-transducer/tree/master) to compile MXNET with RNNT loss.
 
 * Extract feature
 link kaldi timit example dirs (`local` `steps` `utils` )
