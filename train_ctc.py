@@ -13,7 +13,6 @@ from mxnet.gluon import contrib
 from DataLoader import SequentialLoader, TokenAcc
 from model import RNNModel
 
-# CTC loss NOTE why recode this? cause Gluon force `blank_label` to last!!!
 class CTCLoss(gluon.loss.Loss):
     def __init__(self, layout='NTC', label_layout='NT', weight=None, **kwargs):
         assert layout in ['NTC', 'TNC'],\
