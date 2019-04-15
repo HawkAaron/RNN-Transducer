@@ -20,6 +20,9 @@
 * Seq2Seq-Attention: [Attention-Based Models for Speech Recognition](https://arxiv.org/abs/1506.07503)
 
 ## Run
+* Compile RNNT Loss
+Follow the instructions in [here](https://github.com/HawkAaron/mxnet-transducer/tree/master) to compile MXNET with RNNT loss.
+
 * Extract feature
 link kaldi timit example dirs (`local` `steps` `utils` )
 excute `run.sh` to extract 40 dim fbank feature
@@ -56,19 +59,11 @@ python eval.py <path to best model parameters> --bi --beam <beam size>
     | greedy | 20.74 |
     | beam 40 | 19.84 |
 
-## Note
-* Current implementation support batch training, but for TIMIT, only do online training.
-* The implementation of Transduction loss is really slow, about 5 times running time of CTC.
-* If you train RNNT ~~using `train_log.py`~~, the PER (calculated seperately in CTC training way.) doesn't change, it has nothing to do with RNNT joint PER.
-
 ## Requirements
 * Python 3.6
 * MxNet 1.1.0
 * numpy 1.14
-* numba 0.37
 
 ## TODO
-* RNNT loss accelaration using CPP
 * beam serach accelaration
-* several baseline
 * Seq2Seq with attention
