@@ -18,12 +18,13 @@ parser.add_argument('--ctc', default=False, action='store_true', help='decode CT
 parser.add_argument('--bi', default=False, action='store_true', help='bidirectional LSTM')
 parser.add_argument('--dataset', default='test')
 parser.add_argument('--out', type=str, default='', help='decoded result output dir')
+parser.add_argument('--cuda', action='store_true', help='use gpu')
 args = parser.parse_args()
 
 logdir = args.out if args.out else os.path.dirname(args.model) + '/decode.log'
 logging.basicConfig(format='%(asctime)s: %(message)s', datefmt="%H:%M:%S", filename=logdir, level=logging.INFO)
 
-context = mx.cpu(0)
+context = mx.gpu(0) if args.cuda else mx.cpu(0)
 
 # Load model
 Model = RNNModel if args.ctc else Transducer
@@ -63,7 +64,7 @@ def decode():
     logging.info('Decoding Transduction model:')
     err = cnt = 0
     for i, (k, v) in enumerate(kaldi_io.read_mat_ark(feat)):
-        xs = mx.nd.array(v[None, ...])
+        xs = mx.nd.array(v[None, ...]).as_in_context(context)
         if args.beam > 0:
             y, nll = model.beam_search(xs, args.beam)
         else:

@@ -77,22 +77,23 @@ class Transducer(gluon.Block):
         ytu = mx.nd.log_softmax(self.joint(f1, g1), axis=3)
         loss = self.loss(ytu, ys, xlen, ylen)
         return loss
-    
+
     def greedy_decode(self, xs):
-        # forward acoustic model TODO streaming decode
+        ctx = xs.context
         h = self.encoder(xs)[0]
-        y = mx.nd.zeros((1, 1, self.vocab_size-1)) # first zero vector 
-        hid = [mx.nd.zeros((1, 1, self.num_hidden))] * 2 # support for one sequence
+        y = mx.nd.zeros((1, 1, self.vocab_size-1), ctx=ctx) # first zero vector 
+        hid = [mx.nd.zeros((1, 1, self.num_hidden), ctx=ctx)] * 2 # support for one sequence
         y, hid = self.decoder(y, hid) # forward first zero
         y_seq = []; logp = 0
         for xi in h:
-            ytu = self.joint(xi, y[0][0])
-            ytu = mx.nd.log_softmax(ytu)
-            yi = mx.nd.argmax(ytu, axis=0) # for Graves2012 transducer
-            pred = int(yi.asscalar()); logp += float(ytu[yi].asscalar())
-            if pred != self.blank:
+            while True:
+                ytu = self.joint(xi, y[0][0])
+                ytu = mx.nd.log_softmax(ytu)
+                yi = mx.nd.argmax(ytu, axis=0) # for Graves2012 transducer
+                pred = int(yi.asscalar()); logp += float(ytu[yi].asscalar())
+                if pred == self.blank: break
                 y_seq.append(pred)
-                y = mx.nd.one_hot(yi.reshape((1,1))-1, self.vocab_size-1)
+                y = mx.nd.one_hot(yi.reshape((1,1))-1, self.vocab_size-1, ctx=ctx)
                 y, hid = self.decoder(y, hid) # forward first zero
         return y_seq, -logp
 
@@ -101,9 +102,10 @@ class Transducer(gluon.Block):
         `xs`: acoustic model outputs
         NOTE only support one sequence (batch size = 1)
         '''
+        ctx = xs.context
         def forward_step(label, hidden):
             ''' `label`: int '''
-            label = mx.nd.one_hot(mx.nd.full((1,1), label-1, dtype=np.int32), self.vocab_size-1)
+            label = mx.nd.one_hot(mx.nd.full((1,1), label-1, dtype=np.int32), self.vocab_size-1, ctx=ctx)
             pred, hidden = self.decoder(label, hidden)
             return pred[0][0], hidden
 
@@ -116,7 +118,7 @@ class Transducer(gluon.Block):
 
         F = mx.nd
         xs = self.encoder(xs)[0]
-        B = [Sequence(blank=self.blank, hidden=[mx.nd.zeros((1, 1, self.num_hidden))] * 2)]
+        B = [Sequence(blank=self.blank, hidden=[mx.nd.zeros((1, 1, self.num_hidden), ctx=ctx)] * 2)]
         for i, x in enumerate(xs):
             if prefix: sorted(B, key=lambda a: len(a.k), reverse=True) # larger sequence first add
             A = B
