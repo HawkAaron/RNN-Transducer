@@ -93,7 +93,7 @@ class Transducer(gluon.Block):
                 pred = int(yi.asscalar()); logp += float(ytu[yi].asscalar())
                 if pred == self.blank: break
                 y_seq.append(pred)
-                y = mx.nd.one_hot(yi.reshape((1,1))-1, self.vocab_size-1, ctx=ctx)
+                y = mx.nd.one_hot(yi.reshape((1,1))-1, self.vocab_size-1).as_in_context(ctx)
                 y, hid = self.decoder(y, hid) # forward first zero
         return y_seq, -logp
 
@@ -105,7 +105,7 @@ class Transducer(gluon.Block):
         ctx = xs.context
         def forward_step(label, hidden):
             ''' `label`: int '''
-            label = mx.nd.one_hot(mx.nd.full((1,1), label-1, dtype=np.int32), self.vocab_size-1, ctx=ctx)
+            label = mx.nd.one_hot(mx.nd.full((1,1), label-1, dtype=np.int32), self.vocab_size-1).as_in_context(ctx)
             pred, hidden = self.decoder(label, hidden)
             return pred[0][0], hidden
 
