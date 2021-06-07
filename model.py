@@ -120,7 +120,7 @@ class Transducer(gluon.Block):
         xs = self.encoder(xs)[0]
         B = [Sequence(blank=self.blank, hidden=[mx.nd.zeros((1, 1, self.num_hidden), ctx=ctx)] * 2)]
         for i, x in enumerate(xs):
-            if prefix: sorted(B, key=lambda a: len(a.k), reverse=True) # larger sequence first add
+            if prefix: B = sorted(B, key=lambda a: len(a.k), reverse=True) # larger sequence first add
             A = B
             B = []
             if prefix:
@@ -165,16 +165,16 @@ class Transducer(gluon.Block):
                     if prefix: yk.g.append(pred)
                     A.append(yk)
                 # sort A
-                # sorted(A, key=lambda a: a.logp, reverse=True) # just need to calculate maximum seq
+                # A = sorted(A, key=lambda a: a.logp, reverse=True) # just need to calculate maximum seq
                 
                 # sort B
-                # sorted(B, key=lambda a: a.logp, reverse=True)
+                # B = sorted(B, key=lambda a: a.logp, reverse=True)
                 y_hat = max(A, key=lambda a: a.logp)
                 yb = max(B, key=lambda a: a.logp)
                 if len(B) >= W and yb.logp >= y_hat.logp: break
 
             # beam width
-            sorted(B, key=lambda a: a.logp, reverse=True)
+            B = sorted(B, key=lambda a: a.logp, reverse=True)
             B = B[:W]
 
         # return highest probability sequence
